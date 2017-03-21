@@ -1,4 +1,5 @@
 import System.IO
+import Control.Monad(unless)
 import Data.Char(toUpper)
 
 main :: IO()
@@ -13,8 +14,7 @@ main = do
 mainloop :: Handle -> Handle -> IO()
 mainloop inh outh=  do
                     iEof <- hIsEOF inh
-                    if iEof
-                      then return ()
-                      else do str <- hGetLine inh
-                              hPutStrLn outh (map toUpper str)
-                              mainloop inh outh
+                    unless iEof $
+                      do str <- hGetLine inh
+                         hPutStrLn outh (map toUpper str)
+                         mainloop inh outh
