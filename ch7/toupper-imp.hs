@@ -12,8 +12,8 @@ main = do
 
 mainloop :: Handle -> Handle -> IO()
 mainloop inh outh=  do
-                    isEOF <- hIsEOF inh
-                    if isEOF
+                    iEof <- hIsEOF inh
+                    if iEof
                       then return ()
                       else do str <- hGetLine inh
                               hPutStrLn outh (map toUpper str)
