@@ -5,6 +5,8 @@ module GlobRegex
 ) where
 
 import Text.Regex.Posix((=~))
+import Data.Char(toUpper)
+
 
 globToRegex :: String -> String
 globToRegex glob = '^' : globToRegex' glob ++ "$"
@@ -28,5 +30,6 @@ charClass (']':cs) = ']':globToRegex' cs
 charClass (c:cs) = c : charClass cs
 charClass [] = error "Unterminated class"
 
-matchesGlob :: FilePath -> String -> Bool
-name `matchesGlob` pat = name =~ globToRegex pat
+matchesGlob :: FilePath -> String -> Bool -> Bool
+matchesGlob name pat True = name =~ globToRegex pat
+matchesGlob name pat False = map toUpper  name =~ globToRegex  (map toUpper pat)
