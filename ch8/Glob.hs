@@ -2,10 +2,10 @@ module Glob (
   namesMatching
 ) where
 
-import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory, getDirectoryContents)
+import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory, getDirectoryContents, listDirectory)
 import System.FilePath (dropTrailingPathSeparator, splitFileName, (</>), isPathSeparator)
 import Control.Exception
-import Control.Monad (forM)
+import Control.Monad (forM, filterM)
 import GlobRegex (matchesGlob)
 
 isPattern :: String -> Bool
@@ -71,3 +71,19 @@ listPlain dirName baseName = do
             then doesDirectoryExist dirName
             else doesNameExist (dirName </> baseName)
   return [baseName | exists]
+
+getChildrenDirs :: String -> IO [String]
+getChildrenDirs path = getChildrenDirs' [path]
+  where getChildrenDirs' :: [String] -> IO [String]
+        getChildrenDirs' paths = do
+          pathNames <- forM paths $ \path -> do
+            dirContent <- listDirectory $ dropTrailingPathSeparator path
+            let absDirContent = map (\p -> dropTrailingPathSeparator path </> p) dirContent
+            dirs <- filterM doesDirectoryExist absDirContent
+            if null dirs
+            then return [dropTrailingPathSeparator path]
+            else do children <- getChildrenDirs' dirs
+                    return (path:children)
+          return (concat pathNames)
+
+
