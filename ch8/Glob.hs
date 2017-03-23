@@ -3,7 +3,7 @@ module Glob (
 ) where
 
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory, getDirectoryContents)
-import System.FilePath (dropTrailingPathSeparator, splitFileName, (</>))
+import System.FilePath (dropTrailingPathSeparator, splitFileName, (</>), isPathSeparator)
 import Control.Exception
 import Control.Monad (forM)
 import GlobRegex (matchesGlob)
@@ -47,6 +47,9 @@ listMatches dir pat = do
               else return dir
   handle (\(SomeException v) -> (const (return []) v)) $ do
     names <- getDirectoryContents dirName'
+    let globMatchingFunc = if isPathSeparator '\\'
+                           then matchesGlobCaseSensitive
+                           else matchesGlobNotCaseSensitive
     let names' = if isHidden pat
                  then filter isHidden names
                  else filter (not . isHidden) names
@@ -54,6 +57,9 @@ listMatches dir pat = do
 
 matchesGlobCaseSensitive :: FilePath -> String -> Bool
 matchesGlobCaseSensitive pat dir = matchesGlob dir pat True
+
+matchesGlobNotCaseSensitive :: FilePath -> String -> Bool
+matchesGlobNotCaseSensitive pat dir = matchesGlob dir pat False
 
 isHidden :: FilePath -> Bool
 isHidden ('.':_) = True
