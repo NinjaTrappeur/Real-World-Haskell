@@ -53,7 +53,7 @@ listMatches dir pat = do
     let names' = if isHidden pat
                  then filter isHidden names
                  else filter (not . isHidden) names
-    return (filter (matchesGlobCaseSensitive pat) names')
+    return (filter (globMatchingFunc pat) names')
 
 matchesGlobCaseSensitive :: FilePath -> String -> Bool
 matchesGlobCaseSensitive pat dir = matchesGlob dir pat True
