@@ -4,9 +4,11 @@ module Glob (
 
 import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory, getDirectoryContents, listDirectory)
 import System.FilePath (dropTrailingPathSeparator, splitFileName, (</>), isPathSeparator)
+import Text.Regex.Posix((=~))
 import Control.Exception
 import Control.Monad (forM, filterM)
-import GlobRegex (matchesGlob, containsDoubleWildcard)
+
+import GlobRegex (matchesGlob)
 
 isPattern :: String -> Bool
 isPattern = any (`elem` "[*?")
@@ -22,8 +24,10 @@ namesMatching pat
         curDir <- getCurrentDirectory
         listMatches curDir baseName
        (dirName, baseName) -> do
-        dirs <- if isPattern dirName
-                then namesMatching (dropTrailingPathSeparator dirName)
+        dirs <- if isPattern dirName || isPattern baseName
+                then if containsDoubleWildcard baseName
+                     then getChildrenDirs (dirName)
+                     else namesMatching $ dropTrailingPathSeparator dirName
                 else return [dirName]
         let listDir = if isPattern baseName
                       then listMatches
@@ -33,12 +37,10 @@ namesMatching pat
                       return (map (dir </>) baseNamesMatches)
         return (concat pathNames)
 
-
 doesNameExist :: String -> IO Bool
 doesNameExist name = do fileExists <- doesFileExist name
                         if fileExists then return True
                                  else doesDirectoryExist name
-
 
 listMatches :: FilePath -> String -> IO [String]
 listMatches dir pat = do
@@ -73,7 +75,8 @@ listPlain dirName baseName = do
   return [baseName | exists]
 
 getChildrenDirs :: String -> IO [String]
-getChildrenDirs path = getChildrenDirs' [path]
+getChildrenDirs path = handle (\(SomeException v) -> (const (return []) v)) $ do
+    getChildrenDirs' [path]
   where getChildrenDirs' :: [String] -> IO [String]
         getChildrenDirs' paths = do
           pathNames <- forM paths $ \path -> do
@@ -85,3 +88,7 @@ getChildrenDirs path = getChildrenDirs' [path]
             else do children <- getChildrenDirs' dirs
                     return (path:children)
           return (concat pathNames)
+
+
+containsDoubleWildcard :: FilePath -> Bool
+containsDoubleWildcard path = path =~ "^.*\\*\\*.*$"
