@@ -6,7 +6,7 @@ import System.Directory (doesDirectoryExist, doesFileExist, getCurrentDirectory,
 import System.FilePath (dropTrailingPathSeparator, splitFileName, (</>), isPathSeparator)
 import Control.Exception
 import Control.Monad (forM, filterM)
-import GlobRegex (matchesGlob)
+import GlobRegex (matchesGlob, containsDoubleWildcard)
 
 isPattern :: String -> Bool
 isPattern = any (`elem` "[*?")
@@ -85,5 +85,3 @@ getChildrenDirs path = getChildrenDirs' [path]
             else do children <- getChildrenDirs' dirs
                     return (path:children)
           return (concat pathNames)
-
-
