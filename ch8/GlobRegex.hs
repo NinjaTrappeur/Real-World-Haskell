@@ -34,6 +34,3 @@ matchesGlob :: FilePath -> String -> Bool -> Bool
 matchesGlob name pat True = name =~ globToRegex pat
 matchesGlob name pat False = map toUpper  name =~ globToRegex  (map toUpper pat)
 
-
-containsDoubleWildcard :: FilePath -> Bool
-containsDoubleWildcard path = path =~ "^.*\\*\\*.*$"
