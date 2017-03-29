@@ -14,6 +14,8 @@ data Info = Info {
   , infoModTime :: Maybe UTCTime
 } deriving (Eq, Ord, Show)
 
+type InfoP a = Info -> a
+
 maybeIO :: IO a -> IO (Maybe a)
 maybeIO act = handle (\(SomeException _)-> return Nothing) (Just `liftM` act)
 
@@ -47,3 +49,31 @@ postOrder (x:xs) = if isDirectory x
   else x:postOrder xs
 postOrder [] = []
 
+-- Predicates/Combinators
+liftP :: (a -> b -> c) -> InfoP a -> b -> InfoP c
+liftP op infoP test info = infoP info `op` test
+
+greaterP, lesserP :: (Ord a) => InfoP a -> a -> InfoP Bool
+greaterP = liftP (>)
+lesserP = liftP (<)
+
+equalsP :: (Eq a) => InfoP a -> a -> InfoP Bool
+equalsP = liftP (==)
+
+liftP2 :: (a -> b -> c) -> InfoP a -> InfoP b -> InfoP c
+liftP2 op pred1 pred2 info = pred1 info `op` pred2 info
+
+andP, orP :: InfoP Bool -> InfoP Bool -> InfoP Bool
+andP = liftP2 (&&)
+orP = liftP2 (||)
+
+(==?)::(Eq a) => InfoP a -> a -> InfoP Bool
+(==?) = equalsP
+
+(>?), (<?) :: (Ord a) => InfoP a -> a -> InfoP Bool
+(>?) = greaterP
+(<?) = lesserP
+
+(&&?),(||?):: InfoP Bool -> InfoP Bool -> InfoP Bool
+(&&?) = andP
+(||?) = orP
