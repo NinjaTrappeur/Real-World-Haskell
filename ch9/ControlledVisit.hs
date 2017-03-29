@@ -3,7 +3,7 @@ module ControllerVisit where
 import System.IO(openFile, IOMode(..), hClose, hFileSize)
 import System.Directory(Permissions, searchable, getDirectoryContents, getPermissions, getModificationTime)
 import System.FilePath((</>))
-import Control.Monad (forM, liftM)
+import Control.Monad (forM, liftM, filterM)
 import Control.Exception(handle, SomeException(SomeException), bracket)
 import Data.Time(UTCTime)
 
@@ -77,3 +77,7 @@ orP = liftP2 (||)
 (&&?),(||?):: InfoP Bool -> InfoP Bool -> InfoP Bool
 (&&?) = andP
 (||?) = orP
+
+traverse' :: ([Info] -> [Info]) -> InfoP Bool -> FilePath -> IO [Info]
+traverse' order pred path = ControllerVisit.traverse (order . filter pred) path
+
