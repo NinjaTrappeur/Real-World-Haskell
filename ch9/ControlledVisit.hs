@@ -1,4 +1,4 @@
-module ControllerVisit where
+module ControlledVisit where
 
 import System.IO(openFile, IOMode(..), hClose, hFileSize)
 import System.Directory(Permissions, searchable, getDirectoryContents, getPermissions, getModificationTime)
@@ -32,7 +32,7 @@ traverse order path = do
   contents <- mapM getInfo (path : map (path </>) names)
   liftM concat $ forM (order contents) $ \info -> 
     if isDirectory info && (infoPath info /= path)
-      then ControllerVisit.traverse order (infoPath info)
+      then ControlledVisit.traverse order (infoPath info)
       else return [info]
 
 getUsefulContent :: FilePath -> IO [String]
@@ -79,5 +79,5 @@ orP = liftP2 (||)
 (||?) = orP
 
 traverse' :: ([Info] -> [Info]) -> InfoP Bool -> FilePath -> IO [Info]
-traverse' order pred path = ControllerVisit.traverse (order . filter pred) path
+traverse' order pred path = ControlledVisit.traverse (order . filter pred) path
 
