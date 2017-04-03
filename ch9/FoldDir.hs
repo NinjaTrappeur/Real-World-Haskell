@@ -1,5 +1,7 @@
 module FoldDir where
-import System.FilePath((</>), takeFileName)
+import System.FilePath((</>), takeFileName, takeExtension)
+import Data.Char(toLower)
+
 import ControlledVisit
 
 
@@ -39,11 +41,11 @@ atMostThreePictures :: Iterator [FilePath]
 atMostThreePictures paths info
   | length paths == 3
     = Done paths
-  | isDirectory info && takeFileName path == ".svn"
+  | ControlledVisit.isDirectory info && takeFileName path == ".svn"
     = Skip paths
   | extension `elem` [".jpg",".png"]
     = Continue (path:paths)
   | otherwise
     = Continue paths
   where extension = map toLower (takeExtension path)
-        path = infoPath path
+        path = infoPath info
