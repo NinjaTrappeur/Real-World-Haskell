@@ -2,7 +2,7 @@ module Parse where
 import PNM
 import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.ByteString.Lazy as L
-import Data.Char (isSpace, chr)
+import Data.Char (isSpace, isDigit, chr)
 import Data.Int
 import Data.Word
 
@@ -83,3 +83,56 @@ parseWhile pred = (fmap pred <$> peekByte) ==> \mp ->
                          (b:) <$> parseWhile pred
                     else identity []
 
+parseWhileVerbose p =
+        peekByte ==> \mc ->
+        case mc of
+          Nothing -> identity []
+          Just c | p c ->
+                      parseByte ==> \b ->
+                      parseWhileVerbose p ==> \bs ->
+                      identity (b:bs)
+                 | otherwise ->
+                    identity []
+
+parseRawPGM =
+  parseWhileWith w2c notWhite ==> \header -> skipSpaces ==>&
+  assert (header == "P5") "invalid raw header" ==>&
+  parseNat ==> \width -> skipSpaces ==>&
+  parseNat ==> \height -> skipSpaces ==>&
+  parseNat ==> \maxGrey ->
+  parseByte ==>&
+  parseBytes (width * height) ==> \bitmap ->
+  identity (Greymap width height maxGrey bitmap)
+ where notWhite = (`notElem` "\r\n\t")
+
+parseWhileWith :: (Word8 -> a) -> (a -> Bool) -> Parse [a]
+parseWhileWith f p = fmap f <$> parseWhile (p . f)
+
+parseNat :: Parse Int
+parseNat = parseWhileWith w2c isDigit ==> \digits ->
+           if null digits
+           then bail "no more input"
+           else let n = read digits
+                in if n < 0
+                   then bail "integer overflow"
+                   else identity n
+
+(==>&) :: Parse a -> Parse b -> Parse b
+p ==>& f = p ==> \_ -> f
+
+skipSpaces :: Parse ()
+skipSpaces = parseWhileWith w2c isSpace ==>& identity ()
+
+assert :: Bool -> String -> Parse ()
+assert True _ = identity()
+assert False err = bail err
+
+parseBytes :: Int -> Parse L.ByteString
+parseBytes n =
+  getState ==> \st ->
+  let n' = fromIntegral n
+      (h,t) = L.splitAt n' (string st)
+      st' = st { offset = offset st + L.length h, string = t }
+  in putState st' ==>&
+     assert (L.length h == n') "end of input" ==>&
+     identity h
